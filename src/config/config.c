@@ -10,6 +10,7 @@
 #include <wchar.h>
 
 #define BASE_TEN 10
+
 int get_cell_width(const char *str) {
     setlocale(LC_ALL, "");
 

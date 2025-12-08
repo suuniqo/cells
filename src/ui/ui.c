@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <signal.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -85,6 +86,25 @@ clock_update(ui_t* ui, const config_t* config) {
         ui->last_tick = now;
         EVENT_SET(ui->events, EVENT_TICK);
     }
+
+    return 0;
+}
+
+static int
+next_generation(ui_t* ui, grid_t* grid, config_t* config, size_t* step) {
+    if (config->steps != 0 && *step >= config->steps) {
+        return 0;
+    }
+
+    if ((config->use_torus ? grid_update_toroidal(grid) : grid_update(grid)) < 0) {
+        return -1;
+    }
+
+    if (++(*step) == config->steps) {
+        ui->mode = MODE_COMPLETED;
+    }
+
+    EVENT_SET(ui->events, EVENT_REDRAW);
 
     return 0;
 }
@@ -177,7 +197,20 @@ handle_clear(ui_t* ui, grid_t* grid) {
 }
 
 static ui_status_t
-handle_key(ui_t* ui, grid_t* grid) {
+handle_frame(ui_t* ui, grid_t* grid, config_t* config, size_t* step) {
+    if (ui->mode != MODE_PAUSE) {
+        return STATUS_CONTINUE;
+    }
+
+    if (next_generation(ui, grid, config, step) < 0) {
+        return STATUS_ERROR;
+    }
+
+    return STATUS_CONTINUE;
+}
+
+static ui_status_t
+handle_key(ui_t* ui, grid_t* grid, config_t* config, size_t* step) {
     if (ui->mode == MODE_COMPLETED) {
         return reader_key(ui->reader) == KEY_EXIT
             ? STATUS_FINISH
@@ -199,10 +232,21 @@ handle_key(ui_t* ui, grid_t* grid) {
         return handle_randomize(ui, grid);
     case KEY_CLEAR:
         return handle_clear(ui, grid);
+    case KEY_FRAME:
+        return handle_frame(ui, grid, config, step);
     default:
         fprintf(stderr, "error: unexpected key: %d\n", reader_key(ui->reader));
         return STATUS_CONTINUE;
     }
+}
+
+static int
+handle_tick(ui_t* ui, grid_t* grid, config_t* config, size_t* step) {
+    if (ui->mode != MODE_SIMULATE) {
+        return 0;
+    }
+
+    return next_generation(ui, grid, config, step);
 }
 
 #define DRAINER_SIZE 32
@@ -424,25 +468,6 @@ ui_finish(ui_t* ui) {
     return 0;
 }
 
-int
-handle_tick(ui_t* ui, grid_t* grid, config_t* config, size_t* step) {
-    if (ui->mode != MODE_SIMULATE || (config->steps != 0 && *step >= config->steps)) {
-        return 0;
-    }
-
-    if ((config->use_torus ? grid_update_toroidal(grid) : grid_update(grid)) < 0) {
-        return -1;
-    }
-
-    if (++(*step) == config->steps) {
-        ui->mode = MODE_COMPLETED;
-    }
-
-    EVENT_SET(ui->events, EVENT_REDRAW);
-
-    return 0;
-}
-
 ui_status_t
 ui_loop(ui_t* ui, grid_t* grid, config_t* config, size_t* step) {
     if (event_test_and_clear(ui, EVENT_REDRAW)
@@ -477,7 +502,7 @@ ui_loop(ui_t* ui, grid_t* grid, config_t* config, size_t* step) {
                 return STATUS_ERROR;
             }
             if (status == READER_NEWKEY) {
-                int rv = handle_key(ui, grid);
+                int rv = handle_key(ui, grid, config, step);
 
                 if (rv == STATUS_FINISH) {
                     return STATUS_FINISH;

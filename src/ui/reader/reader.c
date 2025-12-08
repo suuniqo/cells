@@ -106,6 +106,10 @@ found_key(reader_t* reader, char c) {       /* NOLINT */
             reader->key = KEY_CLEAR;
             return true;
         }
+        if (c == KEY_FRAME) {
+            reader->key = KEY_FRAME;
+            return true;
+        }
         break;
     case STATE_BRACK:
         if (c == '[') {

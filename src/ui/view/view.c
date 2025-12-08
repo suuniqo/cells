@@ -163,7 +163,7 @@ view_paint_grid_row(const view_t* view, const grid_t* grid, size_t row, size_t c
                 return -1;
             }
         } else {
-            if (printer_append(view->printer, "\x1b[1;38;5;%dm%s", view->color_dark, view->cell_dead) < 0) {
+            if (printer_append(view->printer, "\x1b[0;38;5;%dm%s", view->color_dark, view->cell_dead) < 0) {
                 return -1;
             }
         }

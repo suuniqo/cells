@@ -19,6 +19,7 @@ typedef enum reader_key {
     KEY_RANDM = 'r',
     KEY_CLEAR = 'c',
     KEY_PAUSE = ' ',
+    KEY_FRAME = '.',
     KEY_EXIT  = CNTL('q'),
 
     KEY_CLICK_PRESS   = 1000,
