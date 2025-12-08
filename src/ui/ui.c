@@ -3,15 +3,10 @@
 #include <errno.h>
 #include <limits.h>
 #include <signal.h>
-#include <stdbool.h>
-#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
-#include <sys/errno.h>
-#include <sys/fcntl.h>
-#include <sys/poll.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <poll.h>
 
@@ -74,6 +69,24 @@ winch_handler(int sig) {
     do {
         n = write(winch_pipe[1], &notify, sizeof(uint8_t));
     } while (n < 0 && errno == EINTR);
+}
+
+static int
+clock_update(ui_t* ui, const config_t* config) {
+    int64_t now;
+
+    if ((now = safe_time()) < 0) {
+        return -1;
+    }
+
+    int64_t delta = now - ui->last_tick;
+
+    if (delta > config->delay) {
+        ui->last_tick = now;
+        EVENT_SET(ui->events, EVENT_TICK);
+    }
+
+    return 0;
 }
 
 static ui_status_t
@@ -230,17 +243,6 @@ poll_events(ui_t* ui, const config_t* config) {
     if (rv < 0) {
         fprintf(stderr, "error: failed during poll: %s\n", strerror(errno));
         return -1;
-    }
-
-    if (rv == 0) {
-        if ((now = safe_time()) < 0) {
-            return -1;
-        }
-
-        ui->last_tick = now;
-
-        EVENT_SET(ui->events, EVENT_TICK);
-        return 0;
     }
 
     if (fds[0].revents & (POLLHUP | POLLERR)) {
@@ -449,6 +451,10 @@ ui_loop(ui_t* ui, grid_t* grid, config_t* config, size_t* step) {
     }
 
     if (poll_events(ui, config) < 0) {
+        return STATUS_ERROR;
+    }
+
+    if (clock_update(ui, config) < 0) {
         return STATUS_ERROR;
     }
 
