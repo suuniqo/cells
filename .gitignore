@@ -1,0 +1,10 @@
+.DS_Store
+.clangd
+.clang-tidy
+.cache
+
+compile_commands.json
+
+/build/
+/bin/
+/assets/
