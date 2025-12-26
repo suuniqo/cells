@@ -201,6 +201,7 @@ config_make(config_t** config_ptr, int argc, char* const* argv) {   /* NOLINT */
             break;
         case ARG_TORUS:
             use_torus = true;
+            fprintf(stderr, "set to true\n");
             break;
         case ARG_SILENT:
             if (!has_dims && !has_ifile) {
@@ -257,7 +258,7 @@ config_make(config_t** config_ptr, int argc, char* const* argv) {   /* NOLINT */
             break;
         case ARG_COLOR:
             if (!graphic) {
-                fprintf(stderr, "cells: --shape option requires --graphic\n");
+                fprintf(stderr, "cells: --color option requires --graphic\n");
                 return -1;
             }
             if (optind + 1 > argc) {
@@ -286,6 +287,10 @@ config_make(config_t** config_ptr, int argc, char* const* argv) {   /* NOLINT */
         }
     }
 
+    if (!has_ifile && !has_dims) {
+        fprintf(stderr, "cells: either -i <file> or --dim <height> <width> is required\n");
+        return -1;
+    }
     if (has_ifile && !has_steps) {
         fprintf(stderr, "cells: -n <steps> is required when using -i\n");
         return -1;
@@ -311,7 +316,7 @@ config_make(config_t** config_ptr, int argc, char* const* argv) {   /* NOLINT */
         .mode = silent ? MODE_SILENT : MODE_GRAPHIC,
         .color_dark = color_dark,
         .color_light = color_light,
-        .use_torus = use_torus,
+        .use_torus = use_torus
     };
 
     return 0;

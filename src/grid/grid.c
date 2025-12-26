@@ -186,13 +186,30 @@ grid_update_chunk_toroidal(const grid_t* grid, size_t crow, size_t ccol) {  /* N
         #undef SUM_NEIGHBOR_ROW
 
         // detectar 2 células vivas
+        uint32_t eq1 = ~p1 & ~p2 & ~p3 & p0;
+
+        // detectar 2 células vivas
         uint32_t eq2 = p1 & ~p2 & ~p3 & ~p0;
 
         // detectar 3 células vivas
         uint32_t eq3 = p0 & p1 & ~p2 & ~p3;
 
+        uint32_t eq4 = ~p1 & p2 & ~p3 & ~p0;
+
+        // detectar 3 células vivas
+        uint32_t eq5 = p0 & ~p1 & p2 & ~p3;
+
+        // detectar 3 células vivas
+        uint32_t eq6 = ~p0 & p1 & p2 & ~p3;
+
+        // detectar 3 células vivas
+        uint32_t eq7 = p0 & p1 & p2 & ~p3;
+
+        // detectar 3 células vivas
+        uint32_t eq8 = ~p0 & ~p1 & ~p2 & p3;
+
         // siguiente generación de la fila
-        uint32_t next = (eq2 & curr) | eq3;
+        uint32_t next = (curr | eq1 | eq2 | eq3 | eq4 | eq5 | eq6 | eq7) & ~eq8;
 
         grid->chunks_next[chunk_idx].rows[row] = next;
     }

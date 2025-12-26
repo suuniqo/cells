@@ -68,7 +68,7 @@ winch_handler(int sig) {
     ssize_t n;
 
     do {
-        n = write(winch_pipe[1], &notify, sizeof(uint8_t));
+       n = write(winch_pipe[1], &notify, sizeof(uint8_t));
     } while (n < 0 && errno == EINTR);
 }
 
